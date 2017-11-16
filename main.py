@@ -86,6 +86,8 @@ class Inventory():
 
 class Map():
     def update(self, xPos, yPos):
+        global gen
+        gen = OpenSimplex(seed=random.randint(0, 99999999999))
         # loop through each row
         for row in range(MAPHEIGHT):
             # loop through each column in the row
@@ -110,7 +112,7 @@ class Map():
                 DISPLAYSURF.blit(textures[tile], (column * TILESIZE, row * TILESIZE))
 
                 plants = 1 * noise(4 * kx, 2 * ky)
-                if plants > 0.7 and plants < 0.8 and tile != WATER and tile != COAL:
+                if plants > 0.7 and plants < 0.8 and tile != WATER and tile != COAL and random.randint(0,9) <= 5:
                     DISPLAYSURF.blit(textures[TREE], (column * TILESIZE, row * TILESIZE))
                     treemap[row][column] = TREE
                 else:
@@ -137,7 +139,7 @@ class App():
         # set up the display
         pygame.init()
         modes = pygame.display.list_modes(16)
-        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF), FULLSCREEN)
+        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
         # add a font for our inventory
         INVFONT = pygame.font.Font('Font.ttf', 18)
         CLOCK = pygame.time.Clock()
