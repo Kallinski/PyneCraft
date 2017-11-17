@@ -1,4 +1,5 @@
-import pygame, sys, random, _thread
+import pygame, sys, random, _thread, math
+import numpy as np
 from pygame.locals import *
 from opensimplex import OpenSimplex
 
@@ -6,6 +7,34 @@ gen = OpenSimplex(seed=random.randint(0, 99999999999))
 def noise(nx, ny):
     # Rescale from -1.0:+1.0 to 0.0:1.0
     return gen.noise2d(nx, ny) / 2.0 + 0.5
+
+def length(v):
+    return math.sqrt(v[0]**2+v[1]**2)
+def dot_product(v,w):
+   return v[0]*w[0]+v[1]*w[1]
+def determinant(v,w):
+   return v[0]*w[1]-v[1]*w[0]
+def inner_angle(v,w):
+   cosx=dot_product(v,w)/(length(v)*length(w))
+   rad=math.acos(cosx) # in radians
+   return rad*180/math.pi # returns degrees
+def angle_clockwise(A, B):
+    inner=inner_angle(A,B)
+    det = determinant(A,B)
+    if det<0: #this is a property of the det. If the det < 0 then B is clockwise of A
+        return inner
+    else: # if the det > 0 then A is immediately clockwise of B
+        return 360-inner
+
+def unit_vector(vector):
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    angle = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) * 180/math.pi
+    print(angle)
+    return angle
 
 #constants representing colours
 BLACK = (0,   0,   0  )
@@ -56,6 +85,8 @@ CLOCK = None
 
 resources = [DIRT,GRASS,WATER,COAL, SAND, DK_GRASS]
 PLAYER = pygame.image.load('player.png')
+TEST1 = pygame.image.load('test.png')
+TEST2 = pygame.image.load('test.png')
 tilemap = [ [DIRT for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
 treemap = [ [None for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
 
@@ -63,10 +94,25 @@ class Player():
     def __init__(self):
         self.xPos = 0
         self.yPos = 0
+        self.rot = 0
 
     def move(self, x, y):
         self.xPos += x
         self.yPos += y
+
+    def rotateTo(self, x, y):
+        global PLAYER
+        xOff, yOff = PLAYER.get_rect().center
+        v1 = ( x, y)
+        v2 = (int(MAPWIDTH / 2) * TILESIZE + xOff, int(MAPHEIGHT / 2) * TILESIZE + yOff)
+        rot = angle_between(v1, v2)
+
+        loc = PLAYER.get_rect().center  # rot_image is not defined
+        rot_sprite = pygame.transform.rotate(PLAYER, rot)
+        rot_sprite.get_rect().center = loc
+        PLAYER = rot_sprite
+
+        self.rot = rot
 
     def update(self):
         DISPLAYSURF.blit(PLAYER, (int(MAPWIDTH / 2) * TILESIZE, int(MAPHEIGHT / 2) * TILESIZE))
@@ -87,7 +133,7 @@ class Inventory():
 class Map():
     def update(self, xPos, yPos):
         global gen
-        gen = OpenSimplex(seed=random.randint(0, 99999999999))
+        #gen = OpenSimplex(seed=random.randint(0, 99999999999))
         # loop through each row
         for row in range(MAPHEIGHT):
             # loop through each column in the row
@@ -111,8 +157,8 @@ class Map():
 
                 DISPLAYSURF.blit(textures[tile], (column * TILESIZE, row * TILESIZE))
 
-                plants = 1 * noise(4 * kx, 2 * ky)
-                if plants > 0.7 and plants < 0.8 and tile != WATER and tile != COAL and random.randint(0,9) <= 5:
+                plants = 0.25 * noise(4 * kx, 2 * ky)
+                if plants > 0.1 and plants < 0.11 and tile != WATER and tile != COAL:
                     DISPLAYSURF.blit(textures[TREE], (column * TILESIZE, row * TILESIZE))
                     treemap[row][column] = TREE
                 else:
@@ -127,9 +173,9 @@ class Map():
             return GRASS
         if e < 0.7:
             if v < 0.2: return SAND
-            return DIRT
+            return DK_GRASS
         if e < 0.8:
-            if v < 0.8: return DK_GRASS
+            if v < 0.8: return DIRT
             return COAL
         return COAL
 
@@ -139,7 +185,7 @@ class App():
         # set up the display
         pygame.init()
         modes = pygame.display.list_modes(16)
-        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
+        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF), FULLSCREEN)
         # add a font for our inventory
         INVFONT = pygame.font.Font('Font.ttf', 18)
         CLOCK = pygame.time.Clock()
@@ -203,6 +249,9 @@ class App():
             pygame.quit()
             sys.exit()
 
+    def OnMouseMovement(self, x, y):
+        self.player.rotateTo(x, y)
+
     def loop(self):
 
         #initial map
@@ -214,9 +263,13 @@ class App():
 
             self.OnKeysPressed(pygame.key.get_pressed())
 
+
             self.inventory.update()
             self.map.update(self.player.xPos, self.player.yPos)
             self.player.update()
+
+            x, y = pygame.mouse.get_pos()
+            self.OnMouseMovement(x, y)
 
             # update the display
             pygame.display.update()
