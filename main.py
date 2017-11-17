@@ -33,7 +33,6 @@ def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     angle = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) * 180/math.pi
-    print(angle)
     return angle
 
 #constants representing colours
@@ -83,6 +82,8 @@ DISPLAYSURF = None
 INVFONT = None
 CLOCK = None
 
+FSCREEN = False
+
 resources = [DIRT,GRASS,WATER,COAL, SAND, DK_GRASS]
 PLAYER = pygame.image.load('player.png')
 TEST1 = pygame.image.load('test.png')
@@ -105,13 +106,15 @@ class Player():
         xOff, yOff = PLAYER.get_rect().center
         v1 = ( x, y)
         v2 = (int(MAPWIDTH / 2) * TILESIZE + xOff, int(MAPHEIGHT / 2) * TILESIZE + yOff)
-        rot = angle_between(v1, v2)
+        rot = angle_clockwise(v1, v2)
+        print(rot)
 
-        loc = PLAYER.get_rect().center  # rot_image is not defined
-        rot_sprite = pygame.transform.rotate(PLAYER, rot)
-        rot_sprite.get_rect().center = loc
-        PLAYER = rot_sprite
-
+        orig_rect = PLAYER.get_rect()
+        rot_image = pygame.transform.rotate(PLAYER, 90)
+        rot_rect = orig_rect.copy()
+        rot_rect.center = rot_image.get_rect().center
+        rot_image = rot_image.subsurface(rot_rect).copy()
+        PLAYER = rot_image
         self.rot = rot
 
     def update(self):
@@ -185,7 +188,7 @@ class App():
         # set up the display
         pygame.init()
         modes = pygame.display.list_modes(16)
-        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF), FULLSCREEN)
+        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
         # add a font for our inventory
         INVFONT = pygame.font.Font('Font.ttf', 18)
         CLOCK = pygame.time.Clock()
@@ -228,6 +231,7 @@ class App():
             self.player.move(0, +1)
 
     def OnKeydownEvent(self, key):
+        global DISPLAYSURF
         # placing dirt
         if (key == K_1):
             # get the tile to swap with the dirt
@@ -248,6 +252,13 @@ class App():
         elif key == K_ESCAPE:
             pygame.quit()
             sys.exit()
+        elif key == K_F11:
+            global FSCREEN
+            if FSCREEN:
+                DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF), FULLSCREEN)
+            else:
+                DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
+            FSCREEN = not FSCREEN
 
     def OnMouseMovement(self, x, y):
         self.player.rotateTo(x, y)
