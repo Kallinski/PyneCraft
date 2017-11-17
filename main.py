@@ -8,32 +8,10 @@ def noise(nx, ny):
     # Rescale from -1.0:+1.0 to 0.0:1.0
     return gen.noise2d(nx, ny) / 2.0 + 0.5
 
-def length(v):
-    return math.sqrt(v[0]**2+v[1]**2)
-def dot_product(v,w):
-   return v[0]*w[0]+v[1]*w[1]
-def determinant(v,w):
-   return v[0]*w[1]-v[1]*w[0]
-def inner_angle(v,w):
-   cosx=dot_product(v,w)/(length(v)*length(w))
-   rad=math.acos(cosx) # in radians
-   return rad*180/math.pi # returns degrees
-def angle_clockwise(A, B):
-    inner=inner_angle(A,B)
-    det = determinant(A,B)
-    if det<0: #this is a property of the det. If the det < 0 then B is clockwise of A
-        return inner
-    else: # if the det > 0 then A is immediately clockwise of B
-        return 360-inner
-
-def unit_vector(vector):
-    return vector / np.linalg.norm(vector)
-
-def angle_between(v1, v2):
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    angle = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) * 180/math.pi
-    return angle
+def angle_between(p1, p2):
+    ang1 = np.arctan2(*p1[::-1])
+    ang2 = np.arctan2(*p2[::-1])
+    return np.rad2deg((ang1 - ang2) % (2 * np.pi))
 
 #constants representing colours
 BLACK = (0,   0,   0  )
@@ -85,9 +63,11 @@ CLOCK = None
 FSCREEN = False
 
 resources = [DIRT,GRASS,WATER,COAL, SAND, DK_GRASS]
-PLAYER = pygame.image.load('player.png')
+PLAYER_ORIG = pygame.image.load('player.png')
+PLAYER = PLAYER_ORIG
 TEST1 = pygame.image.load('test.png')
 TEST2 = pygame.image.load('test.png')
+TEST3 = pygame.image.load('test.png')
 tilemap = [ [DIRT for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
 treemap = [ [None for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
 
@@ -103,14 +83,15 @@ class Player():
 
     def rotateTo(self, x, y):
         global PLAYER
+        PLAYER = PLAYER_ORIG
         xOff, yOff = PLAYER.get_rect().center
-        v1 = ( x, y)
-        v2 = (int(MAPWIDTH / 2) * TILESIZE + xOff, int(MAPHEIGHT / 2) * TILESIZE + yOff)
-        rot = angle_clockwise(v1, v2)
-        print(rot)
+
+        #math.atan2(playerX - mouseX, playerY - mouseY)
+        myradians = math.atan2(int(MAPWIDTH / 2) * TILESIZE + xOff - x, int(MAPHEIGHT / 2) * TILESIZE + yOff - y)
+        rot = math.degrees(myradians)
 
         orig_rect = PLAYER.get_rect()
-        rot_image = pygame.transform.rotate(PLAYER, 90)
+        rot_image = pygame.transform.rotozoom(PLAYER, rot, 1)
         rot_rect = orig_rect.copy()
         rot_rect.center = rot_image.get_rect().center
         rot_image = rot_image.subsurface(rot_rect).copy()
