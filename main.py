@@ -146,11 +146,16 @@ class Map():
             startTile = tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2)]
 
     def worldCoordinatesToChunk(self, x, y):
-        xChunk = int(x / TPS)
-        yChunk = int(y / TPS)
+        if x < 0:
+            xChunk = int((x-TPS+1) / TPS)
+        else:
+            xChunk = int(x / TPS)
 
-        if x < 0: xChunk -= 1
-        if y < 0: yChunk -= 1
+        if y < 0:
+            yChunk = int((y-TPS+1) / TPS)
+        else:
+            yChunk = int(y / TPS)
+
         return xChunk, yChunk
 
     def generateChunk(self, x, y):
@@ -164,8 +169,8 @@ class Map():
             for row in range(0,TPS):
                 for column in range(0,TPS):
 
-                    kx = (x*TPS + column) / MAPWIDTH# - 0.5
-                    ky = (y*TPS + row) / MAPHEIGHT# - 0.5
+                    kx = (x*(TPS) + column) / MAPWIDTH# - 0.5
+                    ky = (y*(TPS) + row) / MAPHEIGHT# - 0.5
 
                     e, v = self.noiseParameter(kx, ky)
 
