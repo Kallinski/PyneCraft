@@ -21,32 +21,33 @@ BLUE  = (0,   0,   255)
 WHITE = (255, 255, 255)
 
 #constants representing the different resources
-DIRT  = 0
-GRASS = 1
-WATER = 2
-COAL  = 3
-DK_GRASS = 4
-SAND = 6
-TREE = 7
+DIRT   = 0
+GRASS  = 1
+DGRASS  = 2
+WATER  = 3
+STONE  = 4
+SAND = 5
 
-#a dictionary linking resources to textures
-textures =   {
-                DIRT   : pygame.image.load('dirt.png'),
-                GRASS  : pygame.image.load('grass.png'),
-                DK_GRASS  : pygame.image.load('dark_grass.png'),
-                WATER  : pygame.image.load('water.png'),
-                COAL   : pygame.image.load('coal.png'),
-                SAND   : pygame.image.load('sand.png'),
-                TREE   : pygame.image.load('bausch.png'),
+TREE = 6
+
+WOOD = 0
+
+resourceTextures =  {
+                    WOOD: pygame.image.load('wood.png'),
+                    }
+
+inventory = {
+            WOOD: 0
             }
 
-inventory =   {
-                DIRT   : 0,
-                GRASS  : 0,
-                DK_GRASS: 0,
-                WATER  : 0,
-                COAL   : 0,
-                SAND: 0
+textures =  {
+            DIRT: pygame.image.load('dirt1.png'),
+            GRASS: pygame.image.load('grass1.png'),
+            DGRASS: pygame.image.load('dgrass1.png'),
+            WATER: pygame.image.load('water1.png'),
+            STONE: pygame.image.load('stone1.png'),
+            SAND: pygame.image.load('sand1.png'),
+            TREE: pygame.image.load('tree1.png'),
             }
 
 #useful game dimensions
@@ -62,7 +63,7 @@ CLOCK = None
 
 FSCREEN = False
 
-resources = [DIRT,GRASS,WATER,COAL, SAND, DK_GRASS]
+resources = [WOOD]
 PLAYER_ORIG = pygame.image.load('player.png')
 PLAYER = PLAYER_ORIG
 SELECTION = pygame.image.load('selection.png')
@@ -98,20 +99,23 @@ class Player():
 
         return angle
 
-    def selectNearestTile(self, angle):
-        x = int(MAPWIDTH / 2) * TILESIZE
-        y = int(MAPHEIGHT / 2) * TILESIZE
-        print(angle)
-        if abs(angle) >= 135:
-            y += TILESIZE
-        elif angle < 135 and angle >= 55:
-            x -= TILESIZE
-        elif angle > -135 and angle <= -55:
-            x += TILESIZE
-        elif abs(angle) < 55:
-            y -= TILESIZE
+    def selectNearestTile(self, x, y):
+        playerX = int(MAPWIDTH / 2) * TILESIZE
+        playerY = int(MAPHEIGHT / 2) * TILESIZE
 
-        DISPLAYSURF.blit(SELECTION, (x, y))
+        if  x >= playerX - TILESIZE and x < playerX + 2*TILESIZE and \
+            y >= playerY - TILESIZE and y < playerY + 2*TILESIZE:
+
+            nx = int(x / TILESIZE)
+            ny = int(y / TILESIZE)
+
+            DISPLAYSURF.blit(SELECTION, (nx * TILESIZE, ny * TILESIZE))
+
+            self.currentSelectionX = nx
+            self.currentSelectionY = ny
+
+    def getCurrentSelection(self):
+        return (self.currentSelectionX, self.currentSelectionY)
 
     def update(self):
         DISPLAYSURF.blit(PLAYER, (int(MAPWIDTH / 2) * TILESIZE, int(MAPHEIGHT / 2) * TILESIZE))
@@ -122,8 +126,8 @@ class Inventory():
         placePosition = 10
         for item in resources:
             # add the image
-            DISPLAYSURF.blit(textures[item], (placePosition, MAPHEIGHT * TILESIZE + 20))
-            placePosition += 30
+            DISPLAYSURF.blit(resourceTextures[item], (placePosition, MAPHEIGHT * TILESIZE + 20))
+            placePosition += 50
             # add the text showing the amount in the inventory
             textObj = INVFONT.render(str(inventory[item]), True, WHITE, BLACK)
             DISPLAYSURF.blit(textObj, (placePosition, MAPHEIGHT * TILESIZE + 20))
@@ -131,23 +135,15 @@ class Inventory():
 
 class Map():
     def update(self, xPos, yPos):
-        global gen
         # loop through each row
         for row in range(MAPHEIGHT):
             # loop through each column in the row
             for column in range(MAPWIDTH):
 
-                kx = (xPos + column) / MAPWIDTH - 0.5
-                ky = (yPos + row) / MAPHEIGHT - 0.5
+                kx = (xPos + column) / MAPWIDTH# - 0.5
+                ky = (yPos + row) / MAPHEIGHT# - 0.5
 
-                #elevation
-                e = 0.5 * noise(0.5 * kx, 0.5 * ky) \
-                    + 0.4 * noise(2 * kx, 2 * ky) \
-                    + 0.1 * noise(2 * kx, 2 * ky)
-
-                v = 0.6 * noise(0.5 * kx, 0.5 * ky) \
-                    + 0.3 * noise(2 * kx, 2 * ky) \
-                    + 0.2 * noise(2 * kx, 2 * ky)
+                e, v = self.noiseParameter(kx, ky)
 
                 tile = self.biome(e, v)
 
@@ -156,7 +152,7 @@ class Map():
                 DISPLAYSURF.blit(textures[tile], (column * TILESIZE, row * TILESIZE))
 
                 plants = 0.25 * noise(4 * kx, 2 * ky)
-                if plants > 0.1 and plants < 0.11 and tile != WATER and tile != COAL:
+                if plants > 0.1 and plants < 0.11 and tile != WATER and tile != STONE:
                     DISPLAYSURF.blit(textures[TREE], (column * TILESIZE, row * TILESIZE))
                     treemap[row][column] = TREE
                 else:
@@ -167,15 +163,27 @@ class Map():
         if e < 0.45: return SAND
 
         if e < 0.6:
-            if v < 0.5: return DK_GRASS
+            if v < 0.5: return DGRASS
             return GRASS
         if e < 0.7:
             if v < 0.2: return SAND
-            return DK_GRASS
+            return DGRASS
         if e < 0.8:
             if v < 0.8: return DIRT
-            return COAL
-        return COAL
+            return STONE
+        return STONE
+
+    def noiseParameter(self, kx, ky):
+        # elevation
+        e = 0.5 * noise(0.5 * kx, 0.5 * ky) \
+            + 0.4 * noise(2 * kx, 2 * ky) \
+            + 0.1 * noise(2 * kx, 2 * ky)
+
+        v = 0.6 * noise(0.5 * kx, 0.5 * ky) \
+            + 0.3 * noise(2 * kx, 2 * ky) \
+            + 0.2 * noise(2 * kx, 2 * ky)
+
+        return e,v
 
 class App():
     def __init__(self):
@@ -203,66 +211,80 @@ class App():
                 self.OnKeydownEvent(event.key)
 
     def OnKeysPressed(self, keys):
-        # if the right arrow is pressed
-        if (keys[K_RIGHT] or keys[K_d]) \
+
+        # diagonal
+        if (keys[K_w] and keys[K_d]) \
+             and tilemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) + 1] != WATER \
+             and treemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) + 1] != TREE:
+            self.player.move(+1, -1)
+
+        elif (keys[K_w] and keys[K_a]) \
+             and tilemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) - 1] != WATER \
+             and treemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) - 1] != TREE:
+            self.player.move(-1, -1)
+
+        elif (keys[K_s] and keys[K_d]) \
+             and tilemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) + 1] != WATER \
+             and treemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) + 1] != TREE:
+            self.player.move(+1, +1)
+        elif (keys[K_s] and keys[K_a]) \
+             and tilemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) - 1] != WATER \
+             and treemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) - 1] != TREE:
+            self.player.move(-1, +1)
+
+        elif (keys[K_d]) \
                 and tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) + 1] != WATER \
                 and treemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) + 1] != TREE:
-            # change the player's x position
             self.player.move(+1, 0)
-        if (keys[K_LEFT] or keys[K_a]) \
+        elif (keys[K_a]) \
                 and tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) - 1] != WATER \
                 and treemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) - 1] != TREE:
-            # change the player's x position
             self.player.move(-1, 0)
-        if (keys[K_UP] or keys[K_w]) \
+        elif (keys[K_w]) \
                 and tilemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2)] != WATER \
                 and treemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2)] != TREE:
-            # change the player's x position
             self.player.move(0, -1)
-        if (keys[K_DOWN] or keys[K_s]) \
+        elif (keys[K_s]) \
                 and tilemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2)] != WATER \
                 and treemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2)] != TREE:
-            # change the player's x position
             self.player.move(0, +1)
+
+
 
     def OnKeydownEvent(self, key):
         global DISPLAYSURF
-        # placing dirt
-        if (key == K_1):
-            # get the tile to swap with the dirt
-            currentTile = tilemap[(int(MAPHEIGHT / 2))][(int(MAPWIDTH / 2))]
-            # if we have dirt in our inventory
-            if inventory[DIRT] > 0:
-                # remove one dirt and place it
-                inventory[DIRT] -= 1
-                # swap the item that was there before
-                inventory[currentTile] += 1
-        elif key == K_SPACE:
-            # what resource is the player standing on?
-            currentTile = tilemap[(int(MAPHEIGHT / 2))][(int(MAPWIDTH / 2))]
-            # player now has 1 more of this resource
-            inventory[currentTile] += 1
-            # the player is now standing on dirt
-            tilemap[(int(MAPHEIGHT / 2))][(int(MAPWIDTH / 2))] = DIRT
+        if key == K_e:
+            x, y = self.player.getCurrentSelection()
+            currentRes = treemap[y][x]
+            if currentRes == TREE:
+                # player now has 1 more of this resource
+                inventory[WOOD] += 1
+
         elif key == K_ESCAPE:
             pygame.quit()
             sys.exit()
         elif key == K_F11:
             global FSCREEN
+            FSCREEN = not FSCREEN
             if FSCREEN:
                 DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF), FULLSCREEN)
             else:
                 DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
-            FSCREEN = not FSCREEN
 
     def OnMouseMovement(self, x, y):
         angle = self.player.rotateTo(x, y)
-        self.player.selectNearestTile(angle)
+        self.player.selectNearestTile(x, y)
 
     def loop(self):
 
+        global gen, tilemap
         #initial map
         self.map.update(0, 0)
+        startTile = tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2)]
+        while startTile == WATER:
+            gen = OpenSimplex(seed=random.randint(0, 99999999999))
+            self.map.update(0, 0)
+            startTile = tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2)]
 
         while True:
             for event in pygame.event.get():
