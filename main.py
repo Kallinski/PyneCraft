@@ -65,9 +65,7 @@ FSCREEN = False
 resources = [DIRT,GRASS,WATER,COAL, SAND, DK_GRASS]
 PLAYER_ORIG = pygame.image.load('player.png')
 PLAYER = PLAYER_ORIG
-TEST1 = pygame.image.load('test.png')
-TEST2 = pygame.image.load('test.png')
-TEST3 = pygame.image.load('test.png')
+SELECTION = pygame.image.load('selection.png')
 tilemap = [ [DIRT for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
 treemap = [ [None for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
 
@@ -75,7 +73,7 @@ class Player():
     def __init__(self):
         self.xPos = 0
         self.yPos = 0
-        self.rot = 0
+        self.angle = 0
 
     def move(self, x, y):
         self.xPos += x
@@ -88,15 +86,32 @@ class Player():
 
         #math.atan2(playerX - mouseX, playerY - mouseY)
         myradians = math.atan2(int(MAPWIDTH / 2) * TILESIZE + xOff - x, int(MAPHEIGHT / 2) * TILESIZE + yOff - y)
-        rot = math.degrees(myradians)
+        angle = math.degrees(myradians)
 
         orig_rect = PLAYER.get_rect()
-        rot_image = pygame.transform.rotozoom(PLAYER, rot, 1)
+        rot_image = pygame.transform.rotozoom(PLAYER, angle, 1)
         rot_rect = orig_rect.copy()
         rot_rect.center = rot_image.get_rect().center
         rot_image = rot_image.subsurface(rot_rect).copy()
         PLAYER = rot_image
-        self.rot = rot
+        self.angle = angle
+
+        return angle
+
+    def selectNearestTile(self, angle):
+        x = int(MAPWIDTH / 2) * TILESIZE
+        y = int(MAPHEIGHT / 2) * TILESIZE
+        print(angle)
+        if abs(angle) >= 135:
+            y += TILESIZE
+        elif angle < 135 and angle >= 55:
+            x -= TILESIZE
+        elif angle > -135 and angle <= -55:
+            x += TILESIZE
+        elif abs(angle) < 55:
+            y -= TILESIZE
+
+        DISPLAYSURF.blit(SELECTION, (x, y))
 
     def update(self):
         DISPLAYSURF.blit(PLAYER, (int(MAPWIDTH / 2) * TILESIZE, int(MAPHEIGHT / 2) * TILESIZE))
@@ -117,7 +132,6 @@ class Inventory():
 class Map():
     def update(self, xPos, yPos):
         global gen
-        #gen = OpenSimplex(seed=random.randint(0, 99999999999))
         # loop through each row
         for row in range(MAPHEIGHT):
             # loop through each column in the row
@@ -242,7 +256,8 @@ class App():
             FSCREEN = not FSCREEN
 
     def OnMouseMovement(self, x, y):
-        self.player.rotateTo(x, y)
+        angle = self.player.rotateTo(x, y)
+        self.player.selectNearestTile(angle)
 
     def loop(self):
 
