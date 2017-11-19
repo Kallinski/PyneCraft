@@ -1,8 +1,11 @@
-import pygame, sys, random, math, sqlite3, json
+import pygame, sys, random, math, sqlite3, json, os
 from pygame.locals import *
 from opensimplex import OpenSimplex
 
-gen = OpenSimplex(seed=random.randint(0, 99999999999))
+SEED = 13051994
+RANDSEED = random.randint(0, 99999999999)
+
+gen = OpenSimplex(seed=SEED)
 def noise(nx, ny):
     # Rescale from -1.0:+1.0 to 0.0:1.0
     return gen.noise2d(nx, ny) / 2.0 + 0.5
@@ -31,10 +34,6 @@ WOOD = 0
 resourceTextures =  {
                     WOOD: pygame.image.load('wood.png'),
                     }
-
-inventory = {
-            WOOD: 0
-            }
 
 textures =  {
             DIRT: pygame.image.load('dirt1.png'),
@@ -72,10 +71,14 @@ chunksGround = {}
 chunksObjects = {}
 
 class Player():
-    def __init__(self):
-        self.xPos = 0
-        self.yPos = 0
-        self.angle = 0
+    def __init__(self, id=-1, x=0, y=0, inventory={str(WOOD): 0}):
+        self.xPos = x
+        self.yPos = y
+        self.inventory = Inventory(inventory)
+
+        if id == -1:
+            App.c.execute('''INSERT INTO player(id, lastX, lastY, inventory) VALUES(?,?,?,?)''', (0, 0, 0, json.dumps(self.inventory.items)))
+            App.conn.commit()
 
     def move(self, x, y):
         self.xPos += x
@@ -105,7 +108,8 @@ class Player():
         playerY = int(MAPHEIGHT / 2) * TILESIZE
 
         if  x >= playerX - TILESIZE and x < playerX + 2*TILESIZE and \
-            y >= playerY - TILESIZE and y < playerY + 2*TILESIZE:
+            y >= playerY - TILESIZE and y < playerY + 2*TILESIZE and \
+            (y != playerY and x != playerX):
 
             nx = int(x / TILESIZE)
             ny = int(y / TILESIZE)
@@ -122,6 +126,16 @@ class Player():
         DISPLAYSURF.blit(PLAYER, (int(MAPWIDTH / 2) * TILESIZE, int(MAPHEIGHT / 2) * TILESIZE))
 
 class Inventory():
+
+    def __init__(self, inventory={str(WOOD): 0}):
+        self.items = inventory
+
+    def add(self, item, amount):
+        self.items.update({str(item): self.items.get(str(item))+amount})
+
+    def get(self, item):
+        return self.items.get(str(item))
+
     def update(self):
         # display the inventory, starting 10 pixels in
         placePosition = 10
@@ -130,20 +144,22 @@ class Inventory():
             DISPLAYSURF.blit(resourceTextures[item], (placePosition, MAPHEIGHT * TILESIZE + 20))
             placePosition += 50
             # add the text showing the amount in the inventory
-            textObj = INVFONT.render(str(inventory[item]), True, WHITE, BLACK)
+            INVFONT = pygame.font.Font('Font.ttf', 12)
+            textObj = INVFONT.render(str(self.items.get(str(item))), True, WHITE, BLACK)
             DISPLAYSURF.blit(textObj, (placePosition, MAPHEIGHT * TILESIZE + 20))
             placePosition += 50
 
 class Map():
-    def __init__(self):
+    def __init__(self, x=0, y=0):
         global gen, tilemap
         # initial map
-        self.update(0, 0)
+        self.update(x, y)
         startTile = tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2)]
+        '''
         while startTile == WATER:
             gen = OpenSimplex(seed=random.randint(0, 99999999999))
-            self.update(0, 0)
-            startTile = tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2)]
+            self.update(x, y)
+            startTile = tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2)]'''
 
     def worldCoordinatesToChunk(self, x, y):
         if x < 0:
@@ -219,6 +235,9 @@ class Map():
 
         neededChunks = []
 
+        xPos -= int(MAPWIDTH / 2)
+        yPos -= int(MAPHEIGHT / 2)
+
         for row in range(MAPHEIGHT):
             for column in range(MAPWIDTH):
                 cx, cy = self.worldCoordinatesToChunk(xPos + column, yPos + row)
@@ -243,6 +262,7 @@ class Map():
                     DISPLAYSURF.blit(textures[object], (column * TILESIZE, row * TILESIZE))
 
                 if DEBUG == True:
+                    INVFONT = pygame.font.Font('Font.ttf', 8)
                     textObj = INVFONT.render(str(xPos+column)+","+str(yPos+row), True, WHITE, BLACK)
                     DISPLAYSURF.blit(textObj, (column * TILESIZE, row * TILESIZE))
 
@@ -289,26 +309,45 @@ class App():
         modes = pygame.display.list_modes(16)
         DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
         # add a font for our inventory
-        INVFONT = pygame.font.Font('Font.ttf', 8)
+        INVFONT = pygame.font.Font('Font.ttf', 10)
         CLOCK = pygame.time.Clock()
 
-        App.conn = sqlite3.connect('map.db')
-        App.c = self.conn.cursor()
-        App.c.execute('''SELECT name FROM sqlite_master WHERE type='table' AND name='map';''')
-        res = App.c.fetchall()
-        if ('map',) in res:
-            App.c.execute('''DROP TABLE map''')
-        App.c.execute('''CREATE TABLE map (id string, x int, y int, ground blob, objects blob, PRIMARY KEY (id))''')
+        if not os.path.isfile(str(SEED)+'.db'):
+            App.conn = sqlite3.connect(str(SEED)+'.db')
+            App.c = self.conn.cursor()
+            App.c.execute('''CREATE TABLE map (id string, x int, y int, ground blob, objects blob, PRIMARY KEY (id))''')
+            App.c.execute('''CREATE TABLE player (id int, lastX int, lastY int, inventory blob, PRIMARY KEY (id))''')
 
-        self.map = Map()
-        self.inventory = Inventory()
-        self.player = Player()
+            self.map = Map()
+            self.player = Player()
+
+        else:
+            App.conn  = sqlite3.connect(str(SEED)+'.db')
+            App.c = self.conn.cursor()
+            App.c.execute('''SELECT lastX, lastY, inventory FROM player WHERE id=0''')
+            res = App.c.fetchall()
+            x = res[0][0]
+            y = res[0][1]
+            inventory = json.loads(res[0][2])
+
+            self.map = Map(x, y)
+            self.player = Player(0, x, y, inventory)
+
         self.loop()
+
+    def save(self):
+        for key in chunksGround:
+            ground = chunksGround.get(key)
+            objects = chunksObjects.get(key)
+            App.c.execute('''UPDATE map SET ground=?, objects=? WHERE id=?''',(json.dumps(ground), json.dumps(objects), key))
+            App.c.execute('''UPDATE player SET lastX=?, lastY=?, inventory=? WHERE id=0''', (self.player.xPos, self.player.yPos, json.dumps(self.player.inventory.items)))
+            App.conn.commit()
 
     def OnEvent(self, event):
             # if the user wants to quit
             if event.type == QUIT:
                 # and the game and close the window
+                self.save()
                 pygame.quit()
                 sys.exit()
             # if a key is pressed
@@ -360,12 +399,42 @@ class App():
         global DISPLAYSURF
         if key == K_e:
             x, y = self.player.getCurrentSelection()
+            playerX = int(MAPWIDTH / 2)
+            playerY = int(MAPHEIGHT / 2)
+            offX = x - playerX
+            offY = y - playerY
             currentRes = treemap[y][x]
+            cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
+            relX = (self.player.xPos+offX) % TPS
+            relY = (self.player.yPos+offY) % TPS
             if currentRes == TREE:
                 # player now has 1 more of this resource
-                inventory[WOOD] += 1
+                self.player.inventory.add(WOOD, 1)
+                objects = chunksObjects.get(str(cX)+","+str(cY))
+                objects[relY][relX] = None
+                chunksObjects.update({str(cX)+","+str(cY): objects})
+
+        elif key == K_f:
+            x, y = self.player.getCurrentSelection()
+            playerX = int(MAPWIDTH / 2)
+            playerY = int(MAPHEIGHT / 2)
+            offX = x - playerX
+            offY = y - playerY
+            currentTile = tilemap[y][x]
+            currentObj = treemap[y][x]
+            cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
+            relX = (self.player.xPos + offX) % TPS
+            relY = (self.player.yPos + offY) % TPS
+            if currentObj != TREE and currentTile != WATER and currentTile != STONE and \
+                    self.player.inventory.get(WOOD) > 0:
+                # player now has 1 more of this resource
+                self.player.inventory.add(WOOD, -1)
+                objects = chunksObjects.get(str(cX) + "," + str(cY))
+                objects[relY][relX] = TREE
+                chunksObjects.update({str(cX) + "," + str(cY): objects})
 
         elif key == K_ESCAPE:
+            self.save()
             pygame.quit()
             sys.exit()
         elif key == K_F11:
@@ -385,18 +454,18 @@ class App():
         self.player.selectNearestTile(x, y)
 
     def loop(self):
-
-        self.map.generateChunk(0, 0)
-        self.map.loadChunk(0, 0)
+        chunkX, chunkY = self.map.worldCoordinatesToChunk(self.player.xPos, self.player.yPos)
+        self.map.loadChunk(chunkX, chunkY)
 
         while True:
+            DISPLAYSURF.fill(BLACK)
             for event in pygame.event.get():
                 self.OnEvent(event)
 
             self.OnKeysPressed(pygame.key.get_pressed())
 
 
-            self.inventory.update()
+            self.player.inventory.update()
             self.map.update(self.player.xPos, self.player.yPos)
             self.player.update()
 
