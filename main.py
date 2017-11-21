@@ -202,6 +202,8 @@ class Player():
     def __init__(self, id=-1, x=0, y=0, inventory=empty_inv):
         self.xPos = x
         self.yPos = y
+        self.currentSelectionX = 0
+        self.currentSelectionY = 0
         self.inventory = Inventory(inventory)
 
         if id == -1:
