@@ -3,7 +3,7 @@ from pygame.locals import *
 from opensimplex import OpenSimplex
 
 RANDSEED = random.randint(0, 99999999999)
-SEED = 0
+SEED = 881337
 
 gen = OpenSimplex(seed=SEED)
 def noise(nx, ny):
@@ -71,13 +71,23 @@ SAND4 = 604
 TREE1 = 1001
 TREE2 = 1002
 
+STONES1 = 1101
+STONES2 = 1102
+STONES3 = 1103
+
+WALL_STONE1 = 1201
+WALL_STONE2 = 1202
+WALL_WOOD1 = 1211
+
 WOOD = 2001
+STONE = 2002
 
 if not os.path.isdir("data/savegames/"): os.makedirs("data/savegames/")
 if not os.path.isdir("data/textures/"): os.makedirs("data/textures/")
 
 resourceTextures =  {
-                    WOOD: pygame.image.load("data/textures/wood.png"),
+                    WOOD: pygame.image.load("data/textures/wood_res.png"),
+                    STONE: pygame.image.load("data/textures/stone_res.png"),
                     }
 
 textures =  {
@@ -129,9 +139,20 @@ textures =  {
             SAND3: pygame.image.load('data/textures/sand3.png'),
             SAND4: pygame.image.load('data/textures/sand4.png'),
 
-            TREE1: pygame.image.load('data/textures/tree1.png'),
-            TREE2: pygame.image.load('data/textures/tree2.png'),
             }
+
+objectTextures =    {
+                    TREE1: pygame.image.load('data/textures/tree1.png'),
+                    TREE2: pygame.image.load('data/textures/tree2.png'),
+
+                    STONES1: pygame.image.load('data/textures/stone_small.png'),
+                    STONES2: pygame.image.load('data/textures/stone_mid.png'),
+                    STONES3: pygame.image.load('data/textures/stone_big.png'),
+
+                    WALL_STONE1: pygame.image.load('data/textures/wall_stone1.png'),
+                    WALL_STONE2: pygame.image.load('data/textures/wall_stone2.png'),
+                    WALL_WOOD1: pygame.image.load('data/textures/wall_wood1.png'),
+                    }
 
 G_WATER = [WATER1,WATER2,WATER3,WATER4]
 G_WATER_ALL = [WATER1,WATER2,WATER3,WATER4,WATER_B,WATER_BL,WATER_BR,WATER_T,WATER_TL,WATER_TR,WATER_R,WATER_L,
@@ -140,13 +161,17 @@ G_SAND = [SAND1,SAND2,SAND3,SAND4]
 G_GRASS = [GRASS1,GRASS2,GRASS3]
 G_DGRASS = [DGRASS1,DGRASS2,DGRASS3]
 
+OBJECTS = []
+for key in objectTextures:
+    OBJECTS.append(key)
+
 #useful game dimensions
 TILESIZE  = 40
+HEIGHT_OFF = TILESIZE
 SCREENWIDTH = 1920
-SCREENHEIGHT = 1080 - TILESIZE*2
+SCREENHEIGHT = 1080
 MAPWIDTH  = int(SCREENWIDTH / TILESIZE)
 MAPHEIGHT = int(SCREENHEIGHT / TILESIZE)
-HEIGHT_OFF = 2*TILESIZE
 DISPLAYSURF = None
 INVFONT = None
 CLOCK = None
@@ -155,19 +180,26 @@ MAX_CHUNKS = 4 + int(MAPWIDTH / TPS) * int(MAPHEIGHT / TPS)
 
 FSCREEN = False
 
-resources = [WOOD]
+resources = [WOOD,STONE]
 PLAYER_ORIG = pygame.image.load('data/textures/player.png')
 PLAYER = PLAYER_ORIG
 SELECTION = pygame.image.load('data/textures/selection.png')
+BB_SELECTION = pygame.image.load('data/textures/bottom_bar_selection.png')
+TOP_BAR = pygame.image.load('data/textures/top_bar.png')
 BOTTOM_BAR = pygame.image.load('data/textures/bottom_bar.png')
 tilemap = [ [DIRT1 for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
-treemap = [ [None for w in range(MAPWIDTH)] for h in range(MAPHEIGHT) ]
+objectmap = [[None for w in range(MAPWIDTH)] for h in range(MAPHEIGHT)]
+
+empty_inv = {str(WOOD): 0, str(STONE): 0}
+
+toolbar = [ None for i in range(10)]
+toolbar_selection = 0
 
 chunksGround = {}
 chunksObjects = {}
 
 class Player():
-    def __init__(self, id=-1, x=0, y=0, inventory={str(WOOD): 0}):
+    def __init__(self, id=-1, x=0, y=0, inventory=empty_inv):
         self.xPos = x
         self.yPos = y
         self.inventory = Inventory(inventory)
@@ -223,7 +255,7 @@ class Player():
 
 class Inventory():
 
-    def __init__(self, inventory={str(WOOD): 0}):
+    def __init__(self, inventory=empty_inv):
         self.items = inventory
 
     def add(self, item, amount):
@@ -237,12 +269,23 @@ class Inventory():
         placePosition = 10
         for item in resources:
             # add the image
-            DISPLAYSURF.blit(resourceTextures[item], (placePosition, MAPHEIGHT * TILESIZE + 25))
+            DISPLAYSURF.blit(resourceTextures[item], (placePosition, 5))
             placePosition += 40
             # add the text showing the amount in the inventory
-            textObj = INVFONT.render(str(self.items.get(str(item))), True, BLACK, None)
-            DISPLAYSURF.blit(textObj, (placePosition, MAPHEIGHT * TILESIZE + 20))
+            textObj = INVFONT.render(str(self.items.get(str(item))), True, WHITE)
+            DISPLAYSURF.blit(textObj, (placePosition, 5))
             placePosition += 50
+
+        for item in toolbar:
+            if item != None:
+                barH = BOTTOM_BAR.get_height()
+                barW = BOTTOM_BAR.get_width()
+                itemH = objectTextures[item].get_height()
+                itemW = objectTextures[item].get_width()
+                offset = int((SCREENWIDTH - 10 * barW) / 2)
+                DISPLAYSURF.blit(objectTextures[item],
+                                 (offset + toolbar.index(item) * barH + (barH - itemH) / 2,
+                                  SCREENHEIGHT - barW + (barW - itemW) / 2))
 
 class Map():
     def __init__(self, x=0, y=0):
@@ -288,8 +331,13 @@ class Map():
                         tile not in G_SAND:
                             if tile in G_GRASS and random.randint(0,60) == 0:
                                 objects[row][column] = TREE1+random.randint(0,1)
-                            elif tile in G_DGRASS and random.randint(0,1) == 0:
-                                objects[row][column] = TREE1+random.randint(0, 1)
+                            if tile in G_DGRASS and random.randint(0, 1) == 0:
+                                objects[row][column] = TREE1 + random.randint(0, 1)
+                            if tile in G_GRASS and random.randint(0, 30) == 0:
+                                objects[row][column] = STONES1 + random.randint(0, 2)
+
+                    elif tile in G_SAND and random.randint(0,50) == 0:
+                        objects[row][column] = STONES1+random.randint(0,2)
                     else:
                         objects[row][column] = None
 
@@ -437,11 +485,11 @@ class Map():
                 object = objects[chunkY][chunkX]
 
                 tilemap[row][column] = tile
-                treemap[row][column] = object
+                objectmap[row][column] = object
 
                 DISPLAYSURF.blit(textures[tile], (column * TILESIZE, row * TILESIZE))
                 if object != None:
-                    DISPLAYSURF.blit(textures[object], (column * TILESIZE, row * TILESIZE))
+                    DISPLAYSURF.blit(objectTextures[object], (column * TILESIZE, row * TILESIZE))
 
                 if DEBUG == True:
                     textObj = INVFONT.render(str(xPos+column)+","+str(yPos+row), True, WHITE, BLACK)
@@ -475,9 +523,10 @@ class App():
         # set up the display
         pygame.init()
         modes = pygame.display.list_modes(16)
-        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
+        DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE))
         # add a font for our inventory
         INVFONT = pygame.font.Font('data/Font.ttf', 13)
+        INVFONT.set_bold(True)
         CLOCK = pygame.time.Clock()
 
         if not os.path.isfile("data/savegames/"+str(SEED)+'.db'):
@@ -502,6 +551,9 @@ class App():
             self.map = Map(x, y)
             self.player = Player(0, x, y, inventory)
 
+
+        toolbar[0] = WALL_WOOD1
+        toolbar[1] = WALL_STONE1
         self.loop()
 
     def save(self):
@@ -513,98 +565,111 @@ class App():
             App.conn.commit()
 
     def OnEvent(self, event):
-            # if the user wants to quit
-            if event.type == QUIT:
-                # and the game and close the window
-                self.save()
-                pygame.quit()
-                sys.exit()
-            # if a key is pressed
-            elif event.type == KEYDOWN:
-                self.OnKeydownEvent(event.key)
+        global toolbar_selection
+
+        # if the user wants to quit
+        if event.type == QUIT:
+            # and the game and close the window
+            self.save()
+            pygame.quit()
+            sys.exit()
+
+        # if a key is pressed
+        elif event.type == KEYDOWN:
+            self.OnKeydownEvent(event.key)
+
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 4: toolbar_selection = (toolbar_selection - 1) % 10
+            if event.button == 5: toolbar_selection = (toolbar_selection + 1) % 10
+            if event.button == 1:
+                x, y = self.player.getCurrentSelection()
+                playerX = int(MAPWIDTH / 2)
+                playerY = int(MAPHEIGHT / 2)
+                offX = x - playerX
+                offY = y - playerY
+                currentRes = objectmap[y][x]
+                cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
+                relX = (self.player.xPos + offX) % TPS
+                relY = (self.player.yPos + offY) % TPS
+                if currentRes in [TREE1, TREE2]:
+                    self.player.inventory.add(WOOD, 1)
+                elif currentRes in [STONES1,STONES2,STONES3]:
+                    self.player.inventory.add(STONE, 1)
+                objects = chunksObjects.get(str(cX) + "," + str(cY))
+                objects[relY][relX] = None
+                chunksObjects.update({str(cX) + "," + str(cY): objects})
+
+            elif event.button == 3:
+                x, y = self.player.getCurrentSelection()
+                playerX = int(MAPWIDTH / 2)
+                playerY = int(MAPHEIGHT / 2)
+                offX = x - playerX
+                offY = y - playerY
+                cT = tilemap[y][x]
+                currentObj = objectmap[y][x]
+                cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
+                relX = (self.player.xPos + offX) % TPS
+                relY = (self.player.yPos + offY) % TPS
+                item = toolbar[toolbar_selection]
+                res = None
+                if item in [WALL_STONE1,WALL_STONE2]: res = STONE
+                if item in [WALL_WOOD1]: res = WOOD
+                if currentObj not in OBJECTS and \
+                    currentObj not in [STONES1,STONES2,STONES3] and \
+                                cT not in [WATER1, WATER2, WATER3] and \
+                                cT not in [STONE1, STONE2] and \
+                                self.player.inventory.get(res) > 0:
+                    # player now has 1 more of this resource
+                    self.player.inventory.add(res, -1)
+                    objects = chunksObjects.get(str(cX) + "," + str(cY))
+                    objects[relY][relX] = item
+                    chunksObjects.update({str(cX) + "," + str(cY): objects})
 
     def OnKeysPressed(self, keys):
 
         # diagonal
         if (keys[K_w] and keys[K_d]) \
              and tilemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) + 1] not in G_WATER_ALL \
-             and treemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) + 1] not in [TREE1, TREE2]:
+             and objectmap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) + 1] not in OBJECTS:
             self.player.move(+1, -1)
 
         elif (keys[K_w] and keys[K_a]) \
              and tilemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) - 1] not in G_WATER_ALL \
-             and treemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) - 1] not in [TREE1, TREE2]:
+             and objectmap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2) - 1] not in OBJECTS:
             self.player.move(-1, -1)
 
         elif (keys[K_s] and keys[K_d]) \
              and tilemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) + 1] not in G_WATER_ALL \
-             and treemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) + 1] not in [TREE1, TREE2]:
+             and objectmap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) + 1] not in OBJECTS:
             self.player.move(+1, +1)
         elif (keys[K_s] and keys[K_a]) \
              and tilemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) - 1] not in G_WATER_ALL \
-             and treemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) - 1] not in [TREE1, TREE2]:
+             and objectmap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2) - 1] not in OBJECTS:
             self.player.move(-1, +1)
 
         elif (keys[K_d]) \
                 and tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) + 1] not in G_WATER_ALL \
-                and treemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) + 1] not in [TREE1, TREE2]:
+                and objectmap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) + 1] not in OBJECTS:
             self.player.move(+1, 0)
         elif (keys[K_a]) \
                 and tilemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) - 1] not in G_WATER_ALL \
-                and treemap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) - 1] not in [TREE1, TREE2]:
+                and objectmap[int(MAPHEIGHT / 2)][int(MAPWIDTH / 2) - 1] not in OBJECTS:
             self.player.move(-1, 0)
         elif (keys[K_w]) \
                 and tilemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2)] not in G_WATER_ALL \
-                and treemap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2)] not in [TREE1, TREE2]:
+                and objectmap[int(MAPHEIGHT / 2) - 1][int(MAPWIDTH / 2)] not in OBJECTS:
             self.player.move(0, -1)
         elif (keys[K_s]) \
                 and tilemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2)] not in G_WATER_ALL \
-                and treemap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2)] not in [TREE1, TREE2]:
+                and objectmap[int(MAPHEIGHT / 2) + 1][int(MAPWIDTH / 2)] not in OBJECTS:
             self.player.move(0, +1)
 
 
 
     def OnKeydownEvent(self, key):
         global DISPLAYSURF
-        if key == K_e:
-            x, y = self.player.getCurrentSelection()
-            playerX = int(MAPWIDTH / 2)
-            playerY = int(MAPHEIGHT / 2)
-            offX = x - playerX
-            offY = y - playerY
-            currentRes = treemap[y][x]
-            cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
-            relX = (self.player.xPos+offX) % TPS
-            relY = (self.player.yPos+offY) % TPS
-            if currentRes in [TREE1, TREE2]:
-                # player now has 1 more of this resource
-                self.player.inventory.add(WOOD, 1)
-                objects = chunksObjects.get(str(cX)+","+str(cY))
-                objects[relY][relX] = None
-                chunksObjects.update({str(cX)+","+str(cY): objects})
 
-        elif key == K_f:
-            x, y = self.player.getCurrentSelection()
-            playerX = int(MAPWIDTH / 2)
-            playerY = int(MAPHEIGHT / 2)
-            offX = x - playerX
-            offY = y - playerY
-            cT = tilemap[y][x]
-            currentObj = treemap[y][x]
-            cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
-            relX = (self.player.xPos + offX) % TPS
-            relY = (self.player.yPos + offY) % TPS
-            if currentObj not in [TREE1, TREE2] and \
-                cT not in [WATER1,WATER2,WATER3] and \
-                cT not in [STONE1,STONE2] and \
-                self.player.inventory.get(WOOD) > 0:
-                    # player now has 1 more of this resource
-                    self.player.inventory.add(WOOD, -1)
-                    objects = chunksObjects.get(str(cX) + "," + str(cY))
-                    objects[relY][relX] = TREE1+random.randint(0,1)
-                    chunksObjects.update({str(cX) + "," + str(cY): objects})
-
-        elif key == K_ESCAPE:
+        if key == K_ESCAPE:
             self.save()
             pygame.quit()
             sys.exit()
@@ -612,9 +677,9 @@ class App():
             global FSCREEN
             FSCREEN = not FSCREEN
             if FSCREEN:
-                DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF), FULLSCREEN)
+                DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE), FULLSCREEN)
             else:
-                DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE + HEIGHT_OFF))
+                DISPLAYSURF = pygame.display.set_mode((MAPWIDTH * TILESIZE, MAPHEIGHT * TILESIZE))
 
         elif key == K_F12:
             global DEBUG
@@ -624,9 +689,15 @@ class App():
         angle = self.player.rotateTo(x, y)
         self.player.selectNearestTile(x, y)
 
-    def update_bottomBar(self):
+    def drawBars(self):
         for i in range(MAPWIDTH):
-            DISPLAYSURF.blit(BOTTOM_BAR, (i*TILESIZE, MAPHEIGHT*TILESIZE))
+            DISPLAYSURF.blit(TOP_BAR, (i*TILESIZE, 0))
+
+        offset = int((SCREENWIDTH - 10*BOTTOM_BAR.get_width()) / 2)
+        for j in range(0, 10):
+            DISPLAYSURF.blit(BOTTOM_BAR, (offset + j*BOTTOM_BAR.get_width(), SCREENHEIGHT - BOTTOM_BAR.get_width()))
+            if toolbar_selection == j:
+                DISPLAYSURF.blit(BB_SELECTION, (offset + j*BOTTOM_BAR.get_width(), SCREENHEIGHT - BOTTOM_BAR.get_width()))
 
     def loop(self):
         chunkX, chunkY = self.map.worldCoordinatesToChunk(self.player.xPos, self.player.yPos)
@@ -639,14 +710,14 @@ class App():
 
             self.OnKeysPressed(pygame.key.get_pressed())
 
-            self.update_bottomBar()
+
             self.map.update(self.player.xPos, self.player.yPos)
             self.player.update()
+            self.drawBars()
             self.player.inventory.update()
 
             x, y = pygame.mouse.get_pos()
             self.OnMouseMovement(x, y)
-
             # update the display
             pygame.display.update()
             CLOCK.tick(60)
