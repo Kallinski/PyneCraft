@@ -82,8 +82,27 @@ WALL_WOOD1 = 1211
 WOOD = 2001
 STONE = 2002
 
+#useful game dimensions
+TILESIZE  = 32
+HEIGHT_OFF = TILESIZE
+SCREENWIDTH = 1920
+SCREENHEIGHT = 1080
+MAPWIDTH  = int(SCREENWIDTH / TILESIZE)
+MAPHEIGHT = int(SCREENHEIGHT / TILESIZE)
+DISPLAYSURF = None
+INVFONT = None
+CLOCK = None
+TPS = 64 #tiles per chunk
+MAX_CHUNKS = 4 + int(MAPWIDTH / TPS) * int(MAPHEIGHT / TPS)
+
+FSCREEN = False
+CRAFTING_MENU = False
+
 if not os.path.isdir("data/savegames/"): os.makedirs("data/savegames/")
 if not os.path.isdir("data/textures/"): os.makedirs("data/textures/")
+
+terrain = pygame.image.load('data/textures/terrain.png')
+character = pygame.image.load("data/textures/character.png")
 
 resourceTextures =  {
                     WOOD: pygame.image.load("data/textures/wood_res.png"),
@@ -91,62 +110,62 @@ resourceTextures =  {
                     }
 
 textures =  {
-            DIRT1: pygame.image.load('data/textures/dirt1.png'),
-            DIRT2: pygame.image.load('data/textures/dirt2.png'),
+            DIRT1: (19*TILESIZE, 5*TILESIZE, TILESIZE, TILESIZE),
+            DIRT2: (20*TILESIZE, 5*TILESIZE, TILESIZE, TILESIZE),
 
-            GRASS1: pygame.image.load('data/textures/grass1.png'),
-            GRASS2: pygame.image.load('data/textures/grass2.png'),
-            GRASS3: pygame.image.load('data/textures/grass3.png'),
-            GRASS_B: pygame.image.load('data/textures/grass_b.png'),
-            GRASS_BL: pygame.image.load('data/textures/grass_bl.png'),
-            GRASS_BR: pygame.image.load('data/textures/grass_br.png'),
-            GRASS_L: pygame.image.load('data/textures/grass_l.png'),
-            GRASS_R: pygame.image.load('data/textures/grass_r.png'),
-            GRASS_T: pygame.image.load('data/textures/grass_t.png'),
-            GRASS_TL: pygame.image.load('data/textures/grass_tl.png'),
-            GRASS_TR: pygame.image.load('data/textures/grass_tr.png'),
-            GRASS_TRB: pygame.image.load('data/textures/grass_trb.png'),
-            GRASS_TLB: pygame.image.load('data/textures/grass_tlb.png'),
-            GRASS_BRB: pygame.image.load('data/textures/grass_brb.png'),
-            GRASS_BLB: pygame.image.load('data/textures/grass_blb.png'),
+            GRASS1: (21*TILESIZE, 5*TILESIZE, TILESIZE, TILESIZE),
+            GRASS2: (22*TILESIZE, 5*TILESIZE, TILESIZE, TILESIZE),
+            GRASS3: (23*TILESIZE, 5*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_B: (33*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_BL: (34*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_BR: (32*TILESIZE, 2*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_L: (34*TILESIZE, 3*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_R: (32*TILESIZE, 3*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_T: (33*TILESIZE, 4*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_TL: (34*TILESIZE, 4*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_TR: (32*TILESIZE, 4*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_TRB: (34*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_TLB: (33*TILESIZE, 0*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_BRB: (34*TILESIZE, 1*TILESIZE, TILESIZE, TILESIZE),
+            GRASS_BLB: (33*TILESIZE, 1*TILESIZE, TILESIZE, TILESIZE),
 
-            DGRASS1: pygame.image.load('data/textures/dgrass1.png'),
-            DGRASS2: pygame.image.load('data/textures/dgrass2.png'),
-            DGRASS3: pygame.image.load('data/textures/dgrass3.png'),
+            DGRASS1: (21*TILESIZE, 11*TILESIZE, TILESIZE, TILESIZE),
+            DGRASS2: (22*TILESIZE, 11*TILESIZE, TILESIZE, TILESIZE),
+            DGRASS3: (23*TILESIZE, 11*TILESIZE, TILESIZE, TILESIZE),
 
-            WATER1: pygame.image.load('data/textures/water1.png'),
-            WATER2: pygame.image.load('data/textures/water2.png'),
-            WATER3: pygame.image.load('data/textures/water3.png'),
-            WATER4: pygame.image.load('data/textures/water4.png'),
-            WATER_B: pygame.image.load('data/textures/water_b.png'),
-            WATER_BL: pygame.image.load('data/textures/water_bl.png'),
-            WATER_BR: pygame.image.load('data/textures/water_br.png'),
-            WATER_L: pygame.image.load('data/textures/water_l.png'),
-            WATER_R: pygame.image.load('data/textures/water_r.png'),
-            WATER_T: pygame.image.load('data/textures/water_t.png'),
-            WATER_TL: pygame.image.load('data/textures/water_tl.png'),
-            WATER_TR: pygame.image.load('data/textures/water_tr.png'),
-            WATER_TRB: pygame.image.load('data/textures/water_trb.png'),
-            WATER_TLB: pygame.image.load('data/textures/water_tlb.png'),
-            WATER_BRB: pygame.image.load('data/textures/water_brb.png'),
-            WATER_BLB: pygame.image.load('data/textures/water_blb.png'),
+            WATER1: (3*TILESIZE, 14*TILESIZE, TILESIZE, TILESIZE),
+            WATER2: (5*TILESIZE, 14*TILESIZE, TILESIZE, TILESIZE),
+            WATER3: (8*TILESIZE, 14*TILESIZE, TILESIZE, TILESIZE),
+            WATER4: (8*TILESIZE, 14*TILESIZE, TILESIZE, TILESIZE),
+            WATER_B: (4*TILESIZE, 11*TILESIZE, TILESIZE, TILESIZE),
+            WATER_BL: (5*TILESIZE, 11*TILESIZE, TILESIZE, TILESIZE),
+            WATER_BR: (3*TILESIZE, 11*TILESIZE, TILESIZE, TILESIZE),
+            WATER_L: (5*TILESIZE, 12*TILESIZE, TILESIZE, TILESIZE),
+            WATER_R: (3*TILESIZE, 12*TILESIZE, TILESIZE, TILESIZE),
+            WATER_T: (4*TILESIZE, 13*TILESIZE, TILESIZE, TILESIZE),
+            WATER_TL: (5*TILESIZE, 13*TILESIZE, TILESIZE, TILESIZE),
+            WATER_TR: (3*TILESIZE, 13*TILESIZE, TILESIZE, TILESIZE),
+            WATER_TRB: (5*TILESIZE, 9*TILESIZE, TILESIZE, TILESIZE),
+            WATER_TLB: (4*TILESIZE, 9*TILESIZE, TILESIZE, TILESIZE),
+            WATER_BRB: (5*TILESIZE, 10*TILESIZE, TILESIZE, TILESIZE),
+            WATER_BLB: (4*TILESIZE, 10*TILESIZE, TILESIZE, TILESIZE),
 
             STONE1: pygame.image.load('data/textures/stone1.png'),
             STONE2: pygame.image.load('data/textures/stone2.png'),
 
-            SAND1: pygame.image.load('data/textures/sand1.png'),
-            SAND2: pygame.image.load('data/textures/sand2.png'),
-            SAND3: pygame.image.load('data/textures/sand3.png'),
-            SAND4: pygame.image.load('data/textures/sand4.png'),
+            SAND1: (4*TILESIZE, 12*TILESIZE, TILESIZE, TILESIZE),
+            SAND2: (0*TILESIZE, 14*TILESIZE, TILESIZE, TILESIZE),
+            SAND3: (1*TILESIZE, 14*TILESIZE, TILESIZE, TILESIZE),
+            SAND4: (2*TILESIZE, 14*TILESIZE, TILESIZE, TILESIZE),
             }
 
 objectTextures =    {
-                    TREE1: pygame.image.load('data/textures/tree1.png'),
-                    TREE2: pygame.image.load('data/textures/tree2.png'),
+                    TREE1: (26*TILESIZE, 31*TILESIZE, TILESIZE, TILESIZE),
+                    TREE2: (27*TILESIZE, 28*TILESIZE, 2*TILESIZE, 6*TILESIZE),
 
-                    STONES1: pygame.image.load('data/textures/stone_small.png'),
-                    STONES2: pygame.image.load('data/textures/stone_mid.png'),
-                    STONES3: pygame.image.load('data/textures/stone_big.png'),
+                    STONES1: (26*TILESIZE, 25*TILESIZE, TILESIZE, TILESIZE),
+                    STONES2: (27*TILESIZE, 25*TILESIZE, TILESIZE, TILESIZE),
+                    STONES3: (28*TILESIZE, 25*TILESIZE, TILESIZE, TILESIZE),
 
                     WALL_STONE1: pygame.image.load('data/textures/wall_stone1.png'),
                     WALL_STONE2: pygame.image.load('data/textures/wall_stone2.png'),
@@ -168,21 +187,7 @@ OBJECTS = []
 for key in objectTextures:
     OBJECTS.append(key)
 
-#useful game dimensions
-TILESIZE  = 40
-HEIGHT_OFF = TILESIZE
-SCREENWIDTH = 1920
-SCREENHEIGHT = 1080
-MAPWIDTH  = int(SCREENWIDTH / TILESIZE)
-MAPHEIGHT = int(SCREENHEIGHT / TILESIZE)
-DISPLAYSURF = None
-INVFONT = None
-CLOCK = None
-TPS = 64 #tiles per chunk
-MAX_CHUNKS = 4 + int(MAPWIDTH / TPS) * int(MAPHEIGHT / TPS)
 
-FSCREEN = False
-CRAFTING_MENU = False
 
 resources = [WOOD,STONE]
 

@@ -212,9 +212,9 @@ class Map():
                 tilemap[row][column] = tile
                 objectmap[row][column] = object
 
-                glob.DISPLAYSURF.blit(glob.textures[tile], (column * glob.TILESIZE, row * glob.TILESIZE))
+                glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE, row * glob.TILESIZE), glob.textures[tile])
                 if object != None:
-                    glob.DISPLAYSURF.blit(glob.objectTextures[object], (column * glob.TILESIZE, row * glob.TILESIZE))
+                    glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE, row * glob.TILESIZE), glob.objectTextures[object])
 
                 if glob.DEBUG == True:
                     textObj = glob.INVFONT.render(str(xPos+column)+","+str(yPos+row), True, glob.WHITE, glob.BLACK)

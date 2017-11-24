@@ -3,8 +3,6 @@ import data.src.globals as glob
 import pygame
 from data.src.Inventory import Inventory
 
-sheet = pygame.image.load("data/textures/character.png")
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, surface, id=-1, x=0, y=0, inventory=None):
         pygame.sprite.Sprite.__init__(self)
@@ -81,7 +79,7 @@ class Player(pygame.sprite.Sprite):
                     self.status = "standing"
                 else:
                     self.current_animation += 1
-            glob.DISPLAYSURF.blit(sheet, (int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2,int(glob.MAPHEIGHT / 2) * glob.TILESIZE - 24),(self.current_animation * 64, 8 * 64, 64, 64))
+            glob.DISPLAYSURF.blit(glob.character, (int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2,int(glob.MAPHEIGHT / 2) * glob.TILESIZE - glob.TILESIZE),(self.current_animation * 64, 8 * 64, 64, 64))
         elif self.status == "walking down":
             time_now = pygame.time.get_ticks()
             if time_now - self.last_animation >= self.animation_cooldown:
@@ -91,8 +89,8 @@ class Player(pygame.sprite.Sprite):
                     self.status = "standing"
                 else:
                     self.current_animation += 1
-            glob.DISPLAYSURF.blit(sheet, (
-            int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - 24),
+            glob.DISPLAYSURF.blit(glob.character, (
+            int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - glob.TILESIZE),
                                   (self.current_animation * 64, 10 * 64, 64, 64))
         elif self.status == "walking left":
             time_now = pygame.time.get_ticks()
@@ -103,8 +101,8 @@ class Player(pygame.sprite.Sprite):
                     self.status = "standing"
                 else:
                     self.current_animation += 1
-            glob.DISPLAYSURF.blit(sheet, (
-            int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - 24),
+            glob.DISPLAYSURF.blit(glob.character, (
+            int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - glob.TILESIZE),
                                   (self.current_animation * 64, 9 * 64, 64, 64))
         elif self.status == "walking right":
             time_now = pygame.time.get_ticks()
@@ -115,9 +113,9 @@ class Player(pygame.sprite.Sprite):
                     self.status = "standing"
                 else:
                     self.current_animation += 1
-            glob.DISPLAYSURF.blit(sheet, (
-            int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - 24),
+            glob.DISPLAYSURF.blit(glob.character, (
+            int(glob.MAPWIDTH / 2) * glob.TILESIZE - (64 - 40) / 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - glob.TILESIZE),
                                   (self.current_animation * 64, 11 * 64, 64, 64))
 
         else:
-            glob.DISPLAYSURF.blit(sheet, (int(glob.MAPWIDTH / 2) * glob.TILESIZE - 24/ 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - 24) ,(self.current_animation * 64, 2 * 64, 64, 64 ))
+            glob.DISPLAYSURF.blit(glob.character, (int(glob.MAPWIDTH / 2) * glob.TILESIZE - 24/ 2, int(glob.MAPHEIGHT / 2) * glob.TILESIZE - glob.TILESIZE) ,(self.current_animation * 64, 2 * 64, 64, 64 ))
