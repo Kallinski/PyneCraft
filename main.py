@@ -413,6 +413,9 @@ class App():
         elif key == K_F12:
             glob.DEBUG = not glob.DEBUG
 
+        elif key == K_SPACE:
+            self.player.attack()
+
     def OnMouseMovement(self, x, y):
         self.player.rotateTo(x, y)
         self.player.selectNearestTile(x, y)
