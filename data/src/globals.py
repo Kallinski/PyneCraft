@@ -160,8 +160,8 @@ textures =  {
             }
 
 objectTextures =    {
-                    TREE1: (26*TILESIZE, 31*TILESIZE, TILESIZE, TILESIZE),
-                    TREE2: (27*TILESIZE, 28*TILESIZE, 2*TILESIZE, 6*TILESIZE),
+                    TREE1: (30*TILESIZE, 0*TILESIZE, 2*TILESIZE, 6*TILESIZE),
+                    TREE2: (30*TILESIZE, 0*TILESIZE, 2*TILESIZE, 6*TILESIZE),
 
                     STONES1: (26*TILESIZE, 25*TILESIZE, TILESIZE, TILESIZE),
                     STONES2: (27*TILESIZE, 25*TILESIZE, TILESIZE, TILESIZE),

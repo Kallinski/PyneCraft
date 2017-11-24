@@ -214,7 +214,10 @@ class Map():
 
                 glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE, row * glob.TILESIZE), glob.textures[tile])
                 if object != None:
-                    glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE, row * glob.TILESIZE), glob.objectTextures[object])
+                    if object == glob.TREE1 or object == glob.TREE2:
+                        glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE - glob.TILESIZE/2, row * glob.TILESIZE - 4*glob.TILESIZE),glob.objectTextures[object])
+                    else:
+                        glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE, row * glob.TILESIZE), glob.objectTextures[object])
 
                 if glob.DEBUG == True:
                     textObj = glob.INVFONT.render(str(xPos+column)+","+str(yPos+row), True, glob.WHITE, glob.BLACK)
