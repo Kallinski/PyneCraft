@@ -1,7 +1,4 @@
 import socket
-import select
-import time
-import _thread
 
 
 class SimpleSocket(object):
@@ -46,8 +43,7 @@ class SimpleSocket(object):
     @staticmethod
     def recv(sock):
         msg = sock.recv(4069)
-        print(msg)
-        return msg
+        return msg.decode("utf-8")
 
     def select(self):
         pass

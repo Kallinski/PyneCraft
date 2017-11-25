@@ -1,6 +1,15 @@
+import select
+import _thread
+
+from data.src.SimpleSocket import SimpleSocket
+from data.src.Client import Client
+
+
 class Server(SimpleSocket):
     clientsSockets = []
-    clientsObj = []
+    clientsSoToObj = {}
+
+    clientReadBuffer = {}
 
     maxClients = 4
 
@@ -14,9 +23,27 @@ class Server(SimpleSocket):
         self.s.bind((self.ip, self.port))
         self.s.listen(self.maxClients)
 
-    def accept(self):
+    def addNewClient(self, clientObj):
+        self.clientReadBuffer[clientObj] = ""
+        self.clientsSockets.append(clientObj.s)
+        self.clientsSoToObj[clientObj.s] = clientObj
 
-        print("new conn")
+    def getClientObjPerTuple(self, ipPortTuple):
+        (ip, port) = ipPortTuple
+        for s in self.clientsSockets:
+            if s == self.s:
+                # skipp server
+                continue
+            if (self.clientsSoToObj[s].ip == ip) and (self.clientsSoToObj[s].port == port):
+                return self.clientsSoToObj[s]
+        return None
+
+    def getClientBuffer(self, client):
+        msg = self.clientReadBuffer[client]
+        self.clientReadBuffer[client] = ""
+        return msg
+
+    def accept(self):
 
         clientSocket, clientAddress = self.s.accept()
 
@@ -27,15 +54,16 @@ class Server(SimpleSocket):
         else:
             raise Exception("Socket is from not supportet type " + str(clientSocket.type))
 
-        self.clientsSockets.append(newSocket.s)
-        self.clientsObj.append(newSocket)
+        (newSocket.ip, newSocket.port) = clientAddress
+        self.addNewClient(newSocket)
         return (newSocket, clientAddress)
 
     def disconnectClient(self, client):
         self.clientsSockets.remove(client)
 
     def readFromClient(self, client):
-        self.recv(client)
+        msg = self.recv(client.s)
+        self.clientReadBuffer[client] += msg
 
     def sendToClient(self, client, msg):
         client.send(msg)
@@ -52,4 +80,4 @@ class Server(SimpleSocket):
                     self.accept()
                 else:
                     # here we can read from the sockets.
-                    ser.readFromClient(s)
+                    self.readFromClient(self.clientsSoToObj[s])

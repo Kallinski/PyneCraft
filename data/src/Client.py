@@ -1,5 +1,13 @@
+import select
+import _thread
+
+from data.src.SimpleSocket import SimpleSocket
+
+
 class Client(SimpleSocket):
     writeBuffer = ""
+    serverIP = None
+    serverPort = None
 
     def __init__(self, prot, sock=None, ip=None, port=None):
         super().__init__(ip, port, prot, sock)
@@ -7,6 +15,11 @@ class Client(SimpleSocket):
     def connect(self, host, port):
         self.setBlocking(self.s, True)
         self.s.connect((host, port))
+        self.serverIP = host
+        self.serverPort = port
+
+        self.port = self.s.getsockname()[1]
+        self.ip = self.s.getsockname()[0]
         self.setBlocking(self.s, False)
         self.thrd = _thread.start_new(self.__mainLoop, ())
 
