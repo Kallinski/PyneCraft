@@ -101,8 +101,10 @@ CRAFTING_MENU = False
 if not os.path.isdir("data/savegames/"): os.makedirs("data/savegames/")
 if not os.path.isdir("data/textures/"): os.makedirs("data/textures/")
 
-terrain = pygame.image.load('data/textures/terrain.png')
-character = pygame.image.load("data/textures/character.png")
+terrain = pygame.image.load('data/textures/terrain.bmp')
+terrain.set_colorkey((255,0,255))
+character = pygame.image.load("data/textures/character.bmp")
+character.set_colorkey((255,0,255))
 
 resourceTextures =  {
                     WOOD: pygame.image.load("data/textures/wood_res.png"),

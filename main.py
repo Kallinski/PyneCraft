@@ -409,9 +409,9 @@ class App():
         elif key == K_F11:
             glob.FSCREEN = not glob.FSCREEN
             if glob.FSCREEN:
-                glob.DISPLAYSURF = pygame.display.set_mode((glob.MAPWIDTH * glob.TILESIZE, glob.MAPHEIGHT * glob.TILESIZE), FULLSCREEN)
+                glob.DISPLAYSURF = pygame.display.set_mode((glob.MAPWIDTH * glob.TILESIZE, glob.MAPHEIGHT * glob.TILESIZE), FULLSCREEN | DOUBLEBUF)
             else:
-                glob.DISPLAYSURF = pygame.display.set_mode((glob.glob.MAPWIDTH * glob.TILESIZE, glob.MAPHEIGHT * glob.TILESIZE))
+                glob.DISPLAYSURF = pygame.display.set_mode((glob.glob.MAPWIDTH * glob.TILESIZE, glob.MAPHEIGHT * glob.TILESIZE), DOUBLEBUF)
 
         elif key == K_F12:
             glob.DEBUG = not glob.DEBUG
