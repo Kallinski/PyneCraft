@@ -21,14 +21,14 @@ class Map():
 
     def worldCoordinatesToChunk(self, x, y):
         if x < 0:
-            xChunk = int((x-glob.TPS+1) / glob.TPS)
+            xChunk = int((x - glob.TPC + 1) / glob.TPC)
         else:
-            xChunk = int(x / glob.TPS)
+            xChunk = int(x / glob.TPC)
 
         if y < 0:
-            yChunk = int((y-glob.TPS+1) / glob.TPS)
+            yChunk = int((y - glob.TPC + 1) / glob.TPC)
         else:
-            yChunk = int(y / glob.TPS)
+            yChunk = int(y / glob.TPC)
 
         return xChunk, yChunk
 
@@ -38,13 +38,13 @@ class Map():
 
         if App.c.fetchone() == None:
 
-            ground = [[glob.DIRT1 for w in range(glob.TPS)] for h in range(glob.TPS)]
-            objects = [ [None for w in range(glob.TPS)] for h in range(glob.TPS) ]
-            for row in range(0,glob.TPS):
-                for column in range(0,glob.TPS):
+            ground = [[glob.DIRT1 for w in range(glob.TPC)] for h in range(glob.TPC)]
+            objects = [[None for w in range(glob.TPC)] for h in range(glob.TPC)]
+            for row in range(0, glob.TPC):
+                for column in range(0, glob.TPC):
 
-                    kx = (x*(glob.TPS) + column) / glob.MAPWIDTH# - 0.5
-                    ky = (y*(glob.TPS) + row) / glob.MAPHEIGHT# - 0.5
+                    kx = (x * (glob.TPC) + column) / glob.MAPWIDTH# - 0.5
+                    ky = (y * (glob.TPC) + row) / glob.MAPHEIGHT# - 0.5
 
                     e = self.noiseParameter(kx, ky)
 
@@ -55,10 +55,10 @@ class Map():
                     if  tile not in glob.G_WATER_ALL and \
                         tile not in glob.G_STONE and \
                         tile not in glob.G_SAND:
-                            if tile in glob.G_GRASS and random.randint(0,60) == 0:
-                                objects[row][column] = glob.TREE1+random.randint(0,1)
-                            if tile in glob.G_DGRASS and random.randint(0, 1) == 0:
-                                objects[row][column] = glob.TREE1 + random.randint(0, 1)
+                            if tile in glob.G_GRASS and random.randint(0,80) == 0:
+                                objects[row][column] = glob.TREE1
+                            if tile in glob.G_DGRASS and random.randint(0, 5) == 0:
+                                objects[row][column] = glob.TREE1
                             if tile in glob.G_GRASS and random.randint(0, 30) == 0:
                                 objects[row][column] = glob.STONES1 + random.randint(0, 2)
 
@@ -67,14 +67,14 @@ class Map():
                     else:
                         objects[row][column] = None
 
-                    tr = self.biome(self.noiseParameter((x * (glob.TPS) + column + 1) / glob.MAPWIDTH, (y * (glob.TPS) + row - 1) / glob.MAPHEIGHT))
-                    r = self.biome(self.noiseParameter((x * (glob.TPS) + column + 1) / glob.MAPWIDTH, (y * (glob.TPS) + row) / glob.MAPHEIGHT))
-                    br = self.biome(self.noiseParameter((x * (glob.TPS) + column + 1) / glob.MAPWIDTH, (y * (glob.TPS) + row + 1) / glob.MAPHEIGHT))
-                    tl = self.biome(self.noiseParameter((x * (glob.TPS) + column - 1) / glob.MAPWIDTH, (y * (glob.TPS) + row - 1) / glob.MAPHEIGHT))
-                    l = self.biome(self.noiseParameter((x * (glob.TPS) + column - 1) / glob.MAPWIDTH, (y * (glob.TPS) + row) / glob.MAPHEIGHT))
-                    bl = self.biome(self.noiseParameter((x * (glob.TPS) + column - 1) / glob.MAPWIDTH, (y * (glob.TPS) + row + 1) / glob.MAPHEIGHT))
-                    t = self.biome(self.noiseParameter((x * (glob.TPS) + column) / glob.MAPWIDTH, (y * (glob.TPS) + row - 1) / glob.MAPHEIGHT))
-                    b = self.biome(self.noiseParameter((x * (glob.TPS) + column) / glob.MAPWIDTH, (y * (glob.TPS) + row + 1) / glob.MAPHEIGHT))
+                    tr = self.biome(self.noiseParameter((x * (glob.TPC) + column + 1) / glob.MAPWIDTH, (y * (glob.TPC) + row - 1) / glob.MAPHEIGHT))
+                    r = self.biome(self.noiseParameter((x * (glob.TPC) + column + 1) / glob.MAPWIDTH, (y * (glob.TPC) + row) / glob.MAPHEIGHT))
+                    br = self.biome(self.noiseParameter((x * (glob.TPC) + column + 1) / glob.MAPWIDTH, (y * (glob.TPC) + row + 1) / glob.MAPHEIGHT))
+                    tl = self.biome(self.noiseParameter((x * (glob.TPC) + column - 1) / glob.MAPWIDTH, (y * (glob.TPC) + row - 1) / glob.MAPHEIGHT))
+                    l = self.biome(self.noiseParameter((x * (glob.TPC) + column - 1) / glob.MAPWIDTH, (y * (glob.TPC) + row) / glob.MAPHEIGHT))
+                    bl = self.biome(self.noiseParameter((x * (glob.TPC) + column - 1) / glob.MAPWIDTH, (y * (glob.TPC) + row + 1) / glob.MAPHEIGHT))
+                    t = self.biome(self.noiseParameter((x * (glob.TPC) + column) / glob.MAPWIDTH, (y * (glob.TPC) + row - 1) / glob.MAPHEIGHT))
+                    b = self.biome(self.noiseParameter((x * (glob.TPC) + column) / glob.MAPWIDTH, (y * (glob.TPC) + row + 1) / glob.MAPHEIGHT))
 
                     if tile in glob.G_WATER:
                         if      r in glob.G_SAND and tl in glob.G_WATER and l in glob.G_WATER and \
@@ -203,8 +203,8 @@ class Map():
                 else:
                     ground, objects = self.loadChunk(cx, cy)
 
-                chunkX = (xPos+column) % glob.TPS
-                chunkY = (yPos+row) % glob.TPS
+                chunkX = (xPos+column) % glob.TPC
+                chunkY = (yPos+row) % glob.TPC
 
                 tile = ground[chunkY][chunkX]
                 object = objects[chunkY][chunkX]
@@ -214,7 +214,7 @@ class Map():
 
                 glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE, row * glob.TILESIZE), glob.textures[tile])
                 if object != None:
-                    if object == glob.TREE1 or object == glob.TREE2:
+                    if object == glob.TREE1:
                         glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE - glob.TILESIZE/2, row * glob.TILESIZE - 4*glob.TILESIZE),glob.objectTextures[object])
                     else:
                         glob.DISPLAYSURF.blit(glob.terrain, (column * glob.TILESIZE, row * glob.TILESIZE), glob.objectTextures[object])
@@ -321,8 +321,8 @@ class App():
                 offY = y - playerY
                 currentRes = objectmap[y][x]
                 cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
-                relX = (self.player.xPos + offX) % glob.TPS
-                relY = (self.player.yPos + offY) % glob.TPS
+                relX = (self.player.xPos + offX) % glob.TPC
+                relY = (self.player.yPos + offY) % glob.TPC
                 if currentRes in [glob.TREE1, glob.TREE2]:
                     self.player.inventory.add(glob.WOOD, 1)
                 elif currentRes in [glob.STONES1,glob.STONES2,glob.STONES3]:
@@ -339,8 +339,8 @@ class App():
                 cT = tilemap[y][x]
                 currentObj = objectmap[y][x]
                 cX, cY = self.map.worldCoordinatesToChunk(self.player.xPos + offX, self.player.yPos + offY)
-                relX = (self.player.xPos + offX) % glob.TPS
-                relY = (self.player.yPos + offY) % glob.TPS
+                relX = (self.player.xPos + offX) % glob.TPC
+                relY = (self.player.yPos + offY) % glob.TPC
                 item = glob.toolbar[glob.toolbar_selection]
                 res = None
                 if item in [glob.WALL_STONE1,glob.WALL_STONE2]: res = glob.STONE
@@ -394,6 +394,9 @@ class App():
                 and tilemap[int(glob.MAPHEIGHT / 2) + 1][int(glob.MAPWIDTH / 2)] not in glob.G_WATER_ALL \
                 and objectmap[int(glob.MAPHEIGHT / 2) + 1][int(glob.MAPWIDTH / 2)] not in glob.OBJECTS:
             self.player.move(0, +1)
+
+        #else:
+            #self.player.stopAnimation()
 
 
 

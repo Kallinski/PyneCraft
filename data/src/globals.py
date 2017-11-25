@@ -69,7 +69,7 @@ SAND3 = 603
 SAND4 = 604
 
 TREE1 = 1001
-TREE2 = 1002
+TREE1_TRUNK = 1002
 
 STONES1 = 1101
 STONES2 = 1102
@@ -92,8 +92,8 @@ MAPHEIGHT = int(SCREENHEIGHT / TILESIZE)
 DISPLAYSURF = None
 INVFONT = None
 CLOCK = None
-TPS = 64 #tiles per chunk
-MAX_CHUNKS = 4 + int(MAPWIDTH / TPS) * int(MAPHEIGHT / TPS)
+TPC = 64 #tiles per chunk
+MAX_CHUNKS = 4 + int(MAPWIDTH / TPC) * int(MAPHEIGHT / TPC)
 
 FSCREEN = False
 CRAFTING_MENU = False
@@ -163,7 +163,7 @@ textures =  {
 
 objectTextures =    {
                     TREE1: (30*TILESIZE, 0*TILESIZE, 2*TILESIZE, 6*TILESIZE),
-                    TREE2: (30*TILESIZE, 0*TILESIZE, 2*TILESIZE, 6*TILESIZE),
+                    #TREE1_TRUNK: (30*TILESIZE, 4*TILESIZE, 2*TILESIZE, 1*TILESIZE),
 
                     STONES1: (26*TILESIZE, 25*TILESIZE, TILESIZE, TILESIZE),
                     STONES2: (27*TILESIZE, 25*TILESIZE, TILESIZE, TILESIZE),
@@ -189,7 +189,7 @@ OBJECTS = []
 for key in objectTextures:
     OBJECTS.append(key)
 
-
+shadow = pygame.image.load('data/textures/shadow.png')
 
 resources = [WOOD,STONE]
 
